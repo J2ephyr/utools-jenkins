@@ -31,9 +31,9 @@ let utools = window.utools ? window.utools : utools_dev;
 utools.onPluginEnter(function ({code, type, payload, optional}) {
   try {
     console.log('plugin enter')
-    if (code == 'jenkins') {
+    if (code === 'jenkins') {
       window.location.hash = '/index';
-    } else if (code == 'jenkins-set') {
+    } else if (code === 'jenkins-set') {
       window.location.hash = '/config';
       console.log('enter config')
     }
