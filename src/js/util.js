@@ -33,7 +33,17 @@ let utils = {
     s[8] = s[13] = s[18] = s[23] = "-";
     return s.join("");
   },
-
+  parseDomain: function (uri) {
+    if (!uri || uri.length === 0) {
+      return ''
+    }
+    let regExp = new RegExp('^(((https|http|ftp|rtsp|mms)?://)?(([0-9a-z_!~*\'().&=+$%-]+: )?[0-9a-z_!~*\'().&=+$%-]+@)?(([0-9]{1,3}.){3}[0-9]{1,3}|([0-9a-z_!~*\'()-]+.)*([0-9a-z][0-9a-z-]{0,61})?[0-9a-z].[a-z]{2,6})(:[0-9]{1,4})?)((/?)|(/[0-9a-z_!~*\'().;?:@&=+$,%#-]+)+/?)$');
+    let array = regExp.exec(uri);
+    if (array.length >= 2) {
+      return array[1]
+    }
+    return ''
+  }
 }
 
 export default utils;

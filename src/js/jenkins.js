@@ -83,10 +83,10 @@ class Jenkins {
     return parseInt(find[0].style.width);
   }
 
-  async getLastBuild(jobUrl) {
+  async getLastBuild(jobName) {
     return await $.ajax({
       dataType: 'json',
-      url: jobUrl + "/lastBuild/api/json"
+      url: this.baseURL + "/job/" + jobName + "/lastBuild/api/json"
     });
   }
 
@@ -100,14 +100,11 @@ class Jenkins {
     });
   }
 
-  async stopBuild(buildURL) {
-    if (!buildURL) {
-      return null;
-    }
+  async stopBuild(jobName, num) {
     return await $.ajax({
       dataType: 'json',
       type: 'POST',
-      url: buildURL + "stop"
+      url: this.baseURL + "/job/" + jobName + "/" + num + "/stop"
     });
   }
 

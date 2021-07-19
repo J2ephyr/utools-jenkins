@@ -266,7 +266,6 @@ export default {
           type: 'post'
         })
         console.log('git parameter', result)
-
       }
     },
     handleParameterTypeOfSelectNoChoice: async function (job, param) {
@@ -306,18 +305,15 @@ export default {
         type: 'warning'
       }).then(async () => {
         console.log("handleCancelBuild", job)
-        let url;
+        let num;
         if (!job.lastBuild) {
           let data = await this.jenkins.getJob(job.name);
           job = $.extend(job, data);
-          url = job.lastBuild.url
+          num = job.lastBuild.number
         } else {
-          let num = job.lastBuild.number + 1
-          url = job.lastBuild.url
-          let regExp = new RegExp(job.name + '/([a-zA-Z0-9]+)/');
-          url = url.replace(regExp.exec(url)[1], num)
+          num = job.lastBuild.number + 1
         }
-        this.jenkins.stopBuild(url)
+        this.jenkins.stopBuild(job.name, num)
       })
     },
     getJenkins: function () {
@@ -354,7 +350,7 @@ export default {
       return new Promise(r => {
         let thus = this;
         (async function (job) {
-          let lastBuild = await thus.jenkins.getLastBuild(job.url);
+          let lastBuild = await thus.jenkins.getLastBuild(job.name);
           let time = thus.formatDate(lastBuild.timestamp);
           if (lastBuild.changeSet && lastBuild.changeSet.items.length > 0) {
             let lastmsg = lastBuild.changeSet.items[lastBuild.changeSet.items.length - 1];

@@ -10,11 +10,11 @@
           <el-button type="primary" @click="handleAdd">新增</el-button>
         </el-row>
         <el-table :data="configList" style="width: 100%">
-          <el-table-column prop="data.alias" fixed label="名称"></el-table-column>
-          <el-table-column prop="data.url" label="Jenkins服务器地址"></el-table-column>
-          <el-table-column prop="data.username" label="用户名"></el-table-column>
-          <el-table-column prop="data.password" label="密码"></el-table-column>
-          <el-table-column prop="操作" fixed="right" width="170px">
+          <el-table-column prop="data.alias" fixed label="名称" width="200"></el-table-column>
+          <el-table-column prop="data.url" label="Jenkins服务器地址" width="200"></el-table-column>
+          <el-table-column prop="data.username" label="用户名" width="200"></el-table-column>
+          <el-table-column prop="data.password" label="密码" width="200"></el-table-column>
+          <el-table-column prop="操作" fixed="right" width="170">
             <template slot-scope="scope">
               <el-button @click="handleEdit(scope.row)" type="primary" size="small">编辑</el-button>
               <el-button @click="handleDelete(scope.row)" type="primary" size="small">删除</el-button>
@@ -26,7 +26,6 @@
     <el-dialog
       :visible.sync="dialogVisible"
       :close-on-click-modal="false"
-      width="30%"
     >
       <el-form :model="config" ref="configForm" :rules="configFormRules">
         <el-form-item prop="data.alias" label="名称">
@@ -103,8 +102,8 @@ export default {
       configFormRules: {
         "data.alias": [{required: true, message: '名称不能为空'}],
         "data.url": [{required: true, message: '地址不能为空'}, {validator: checkUrl, trigger: 'blur'}],
-        "data.username": [{required: true, message: '用户名不能为空'}],
-        "data.password": [{required: true, message: '密码不能为空'}],
+        // "data.username": [{required: true, message: '用户名不能为空'}],
+        // "data.password": [{required: true, message: '密码不能为空'}],
       }
     }
   },
