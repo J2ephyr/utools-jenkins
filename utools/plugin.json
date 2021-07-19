@@ -5,7 +5,7 @@
 	"preload": "preload.js",
 	"main" : "index.html",
 	"logo": "jenkins.png",
-	"homepage" : "https://github.com/me10zyl/utools-jenkins",
+	"homepage" : "https://github.com/J2ephyr/utools-jenkins",
   "development" : {
     "main" : "http://127.0.0.1:8081/index.html"
   },

@@ -1,5 +1,10 @@
 # utools-jenkins
 
+仓库地址：[https://github.com/J2ephyr/utools-jenkins](https://github.com/J2ephyr/utools-jenkins)
+
+原作者：me10zyl
+[https://github.com/me10zyl/utools-jenkins](https://github.com/me10zyl/utools-jenkins)
+
 + 使用 `jk-set` 或者 `jenkins-set` 来设置jenkins的URL, 用户名密码(可选)
 + 使用 `jk` 或者 `jenkins` 来搜索jenkins的job
 
@@ -29,8 +34,4 @@
 + v0.0.3 新增构建功能，支持无参构建和部分有参构建（文本和选择），新增构建进度展示和增加刷新按钮
 + v0.0.4 修复构建时未授权的BUG
 + v0.0.5 修复有些文本参数化构建选项无法显示问题
-+ v0.1.0 1、UI重构 2、Jenkins参数解析修改 3、取消构建功能
-
-# 提交BUG与建议
-
-[https://github.com/me10zyl/utools-jenkins](https://github.com/me10zyl/utools-jenkins)
++ v0.1.0 1.UI重构 2.Jenkins参数解析修改 3.取消构建功能
