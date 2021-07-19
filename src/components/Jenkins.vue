@@ -17,6 +17,16 @@
               </el-option>
             </el-select>
           </el-col>
+          <el-col :span="6" :push="1">
+            <el-select style="width: 100%" v-model="viewSelected" placeholder="请选择" @change="onSwitchView">
+              <el-option
+                v-for="view in viewList"
+                :key="view.name"
+                :label="view.name"
+                :value="view.name">
+              </el-option>
+            </el-select>
+          </el-col>
         </el-row>
         <el-row>
           <el-input class="input" placeholder="JOB名称" v-model="filterValue" v-bind:input="onInputSearch"/>
@@ -129,7 +139,9 @@ export default {
       configList: utils.getConfigList(),
       activeConfigId: null,
       jobList: [],
-      filterValue: ''
+      filterValue: '',
+      viewSelected: '',
+      viewList: []
     }
   },
   computed: {
@@ -248,24 +260,16 @@ export default {
     },
     handleGitParameter: async function (job, param) {
       if (param._class === 'net.uaznia.lukanus.hudson.plugins.gitparameter.GitParameterDefinition') {
-        let crumb = await this.jenkins.getJenkinsCrumb(job.name);
-        /*  var parser = new DOMParser();
-          var htmlDoc = parser.parseFromString(jobHtml, 'text/html');
-          let $jobHtml = $(htmlDoc);*/
-        // console.log('html', $jobHtml)
-        let crumbValue = crumb.crumb;
-        let crumbHeader = crumb.crumbRequestField;
-        console.log('crumb header', crumbHeader);
-        console.log('crumb value', crumbValue);
-        let headers = {};
-        headers[crumbHeader] = crumbValue;
-        let result = await $.ajax({
-          headers: headers,
-          url: job.url + '/descriptorByName/net.uaznia.lukanus.hudson.plugins.gitparameter.GitParameterDefinition/fillValueItems?param=' + param.name,
-          dataType: 'json',
-          type: 'post'
-        })
+        let result = await this.jenkins.getGitParameter(job.name, param.name);
         console.log('git parameter', result)
+        let choices = []
+        let options = result ? result.values : []
+        if (options.length !== 0) {
+          for (let i = 0; i < options.length; i++) {
+            choices.push({text: options[i].name, value: options[i].value})
+          }
+        }
+        param.choices = choices
       }
     },
     handleParameterTypeOfSelectNoChoice: async function (job, param) {
@@ -384,22 +388,28 @@ export default {
     },
     setJobList: async function () {
       let {url, username, password} = this.getAuth();
-      let jobs = {
+      let result = {
         jobs: []
       };
       try {
-        jobs = await this.jenkins.listJobs()
+        result = await this.jenkins.listJobs('', this.viewSelected)
       } catch (e) {
         console.error(e)
         this.$alert(e.responseText, '', {
           dangerouslyUseHTMLString: true
         });
       }
-      for (let job of jobs.jobs) {
+      for (let job of result.jobs) {
         job.lastBuildTime = 'N/A';
         this.updateJobColor(job);
       }
-      this.jobList = jobs.jobs;
+      this.jobList = result.jobs;
+      if (result.views) {
+        this.viewList = result.views
+      }
+      if (result.primaryView && result.primaryView.name) {
+        this.viewSelected = result.primaryView.name
+      }
       await new Promise((r) => {
         setTimeout(r, 1000)
       });
@@ -416,6 +426,9 @@ export default {
           "_rev": e._rev
         })
       })
+    },
+    onSwitchView: async function (viewSelected) {
+      this.setJobList()
     },
     handleTabClick: function (tab) {
       if (tab.name === 'index') {
