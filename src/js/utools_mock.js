@@ -6,6 +6,9 @@ export default {
   onPluginReady : function(){
 
   },
+  showNotification : function (msg) {
+
+  },
   shellOpenExternal: function (url) {
     window.open(url)
   },

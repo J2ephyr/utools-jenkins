@@ -70,8 +70,8 @@
       :visible.sync="buildDialog"
       :close-on-click-modal="false"
     >
-      <label>{{currentJob.description}}</label>
-      <el-divider></el-divider>
+      <label v-if="currentJob.description">{{currentJob.description}}</label>
+      <el-divider v-if="currentJob.description"></el-divider>
       <el-form label-position="top"
                v-if="currentJob.actions && currentJob.actions[0] && currentJob.actions[0]._class==='hudson.model.ParametersDefinitionProperty'">
         <el-form-item v-for="param in currentJob.actions[0].parameterDefinitions">
@@ -168,6 +168,8 @@ export default {
     configList: {
       handler: function (val) {
         if (this.getJenkins()) {
+          this.viewSelected = ''
+          this.viewList = []
           this.setJobList()
         }
       },
@@ -214,6 +216,7 @@ export default {
       });
       (async () => {
         job.color = await this.jenkins.getJobColor(job.name);
+        this.$set(job, 'progress', 0);
         this.updateJobColor(job, true);
       })()
     },
@@ -252,6 +255,13 @@ export default {
               job.interval = null;
               this.$set(job, 'progress', '');
               job.synced = false;
+              if (job.color.match(/yellow|blue/)) {
+                utools.showNotification(job.name + "构建成功！")
+              } else if (job.color.match(/red/)) {
+                utools.showNotification(job.name + "构建失败！")
+              } else {
+                utools.showNotification(job.name + "构建结束！")
+              }
             }
             console.log(job.progress);
           }, 5000);
