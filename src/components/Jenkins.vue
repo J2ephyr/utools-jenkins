@@ -56,7 +56,7 @@
                   <el-progress :percentage="scope.row.progress"></el-progress>
                 </el-col>
                 <el-col :span="8">
-                  <el-button type="danger" @click="handleCancelBuild(scope.row)">取消</el-button>
+                  <el-button type="danger" size="small" @click="handleCancelBuild(scope.row)">取消</el-button>
                 </el-col>
               </el-row>
             </template>
