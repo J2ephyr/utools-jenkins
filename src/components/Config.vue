@@ -10,11 +10,11 @@
           <el-button type="primary" @click="handleAdd">新增</el-button>
         </el-row>
         <el-table :data="configList" style="width: 100%">
-          <el-table-column prop="data.alias" fixed label="名称" width="200"></el-table-column>
-          <el-table-column prop="data.url" label="Jenkins服务器地址" width="200"></el-table-column>
-          <el-table-column prop="data.username" label="用户名" width="200"></el-table-column>
-          <el-table-column prop="data.password" label="密码" width="200"></el-table-column>
-          <el-table-column prop="操作" fixed="right" width="170">
+          <el-table-column prop="data.alias" fixed label="名称" width="300"></el-table-column>
+          <el-table-column prop="data.url" label="Jenkins服务器地址" width="300"></el-table-column>
+          <el-table-column prop="data.username" label="用户名" width="300"></el-table-column>
+          <el-table-column prop="data.password" label="密码" width="900"></el-table-column>
+          <el-table-column prop="操作" fixed="right" width="200" align="center">
             <template slot-scope="scope">
               <el-button @click="handleEdit(scope.row)" type="primary" size="small">编辑</el-button>
               <el-button @click="handleDelete(scope.row)" type="primary" size="small">删除</el-button>
@@ -131,12 +131,13 @@ export default {
       this.$refs["configForm"].validate((valid) => {
         console.log(valid)
         if (valid) {
+
           if (!this.config._id) {
             this.config._id = "jenkins-" + utils.uuid()
           }
           this.config._rev || delete this.config._rev
           utools.db.put(this.config);
-          this.configList.push(this.config)
+          this.configList = getConfList()
           this.$message({
             message: '保存成功！',
             type: 'success'
