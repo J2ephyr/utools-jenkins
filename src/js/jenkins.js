@@ -54,8 +54,8 @@ class Jenkins {
     return result.color;
   }
 
-  async buildJob(jobName, parameters, authString) {
-    let httpRequest = new XMLHttpRequest();
+  buildJob(jobName, parameters, authString) {
+    let url
     if (parameters != null) {
       let string = "";
       for (let key in parameters) {
@@ -64,13 +64,23 @@ class Jenkins {
         }
       }
       string = '?' + string.substring(1);
-      httpRequest.open('POST', this.baseURL + "/job/" + jobName + "/buildWithParameters" + string, true);
+      url = this.baseURL + "/job/" + jobName + "/buildWithParameters" + string
     } else {
-      httpRequest.open('POST', this.baseURL + "/job/" + jobName + "/build", true);
+      url = this.baseURL + "/job/" + jobName + "/build"
     }
-    httpRequest.setRequestHeader("Authorization", authString)
-    httpRequest.setRequestHeader("content-type", "application/x-www-form-urlencoded")
-    httpRequest.send();
+    return $.ajax({
+      query: parameters,
+      contentType: 'application/x-www-form-urlencoded; charset=UTF-8',
+      type: 'post',
+      url: url,
+    })
+  }
+
+  async getQueueItem(itemId) {
+    return await $.ajax({
+      dataType: 'json',
+      url: this.baseURL + "/queue/item/" + itemId + "/api/json/"
+    });
   }
 
   async ajaxJob(jobName) {

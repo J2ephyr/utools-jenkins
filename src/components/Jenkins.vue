@@ -39,7 +39,8 @@
           </el-table-column>
           <el-table-column prop="name" fixed="left" label="名称" width="300">
             <template slot-scope="scope">
-              <el-link href="" target="_blank" @click="onClickJobName(scope.row)" type="primary">{{scope.row.name}}</el-link>
+              <el-link href="" target="_blank" @click="onClickJobName(scope.row)" type="primary">{{ scope.row.name }}
+              </el-link>
             </template>
           </el-table-column>
           <el-table-column prop="lastBuildTime" label="上次构建时间" width="200"></el-table-column>
@@ -70,7 +71,7 @@
       :visible.sync="buildDialog"
       :close-on-click-modal="false"
     >
-      <label v-if="currentJob.description">{{currentJob.description}}</label>
+      <label v-if="currentJob.description">{{ currentJob.description }}</label>
       <el-divider v-if="currentJob.description"></el-divider>
       <el-form label-position="top"
                v-if="currentJob.actions && currentJob.actions[0] && currentJob.actions[0]._class==='hudson.model.ParametersDefinitionProperty'">
@@ -86,11 +87,13 @@
             v-if="jobParameterTypeOfSelect.indexOf(param.type) !== -1 && param.choices && param.choices.length !== 0"
             v-model="currentJob.form[param.name]" @change="refreshStatus" style="width: 100%"
             :multiple="param.type === 'PT_MULTI_SELECT'">
-            <el-option v-if="jobParameterTypeOfSelectNoChoice.indexOf(param.type) !== -1"
-                       v-for="choice in param.choices" :value="choice.value" :label="choice.text"/>
+            <template v-if="jobParameterTypeOfSelectNoChoice.indexOf(param.type) !== -1">
+              <el-option v-for="choice in param.choices" :value="choice.value" :label="choice.text"/>
+            </template>
             <el-option v-else v-for="choice in param.choices" :value="choice" :label="choice"/>
           </el-select>
-          <el-input v-else-if="jobParameterTypeOfInput.indexOf(param.type) !== -1" autocomplete="true" @input="refreshStatus"
+          <el-input v-else-if="jobParameterTypeOfInput.indexOf(param.type) !== -1" autocomplete="true"
+                    @input="refreshStatus"
                     :type="param.type === 'PasswordParameterDefinition' ? 'password' : 'text'"
                     v-model="currentJob.form[param.name]"/>
           <el-input v-else-if="jobParameterTypeOfTextArea.indexOf(param.type) !== -1" type="textarea" autosize
@@ -209,12 +212,32 @@ export default {
       let auth = "Basic " + btoa(username + ":" + password);
       this.buildDialog = false;
       let isParam = job.actions && job.actions[0] && job.actions[0]._class === 'hudson.model.ParametersDefinitionProperty';
-      this.jenkins.buildJob(job.name, isParam ? job.form : null, auth);
+      let jqXHR = this.jenkins.buildJob(job.name, isParam ? job.form : null, auth)
       this.$message({
         message: '开始构建！',
         type: 'success'
       });
       (async () => {
+        let itemId
+        await jqXHR.done((data, textStatus, jqXHR) => {
+          //http://192.168.22.172:8080/queue/item/14439/
+          let location = jqXHR.getResponseHeader('Location')
+          console.log(jqXHR.getResponseHeader('Location'))
+          let regExp = new RegExp('^.*/item/([a-zA-Z0-9]+)/$')
+          let array = regExp.exec(location);
+          if (array.length >= 2) {
+            itemId = array[1]
+          }
+        })
+        if (itemId) {
+          let queueItem = await this.jenkins.getQueueItem(itemId)
+          job.curBuildingNumber = queueItem.executable.number
+          job.curBuildingQueueItemId = itemId
+        } else {
+          let data = await this.jenkins.getJob(job.name);
+          job = $.extend(job, data);
+          job.curBuildingNumber = job.lastBuild.number
+        }
         job.color = await this.jenkins.getJobColor(job.name);
         this.$set(job, 'progress', 0);
         this.updateJobColor(job, true);
@@ -319,13 +342,11 @@ export default {
         type: 'warning'
       }).then(async () => {
         console.log("handleCancelBuild", job)
-        let num;
-        if (!job.lastBuild) {
+        let num = job.curBuildingNumber;
+        if (!num) {
           let data = await this.jenkins.getJob(job.name);
           job = $.extend(job, data);
           num = job.lastBuild.number
-        } else {
-          num = job.lastBuild.number + 1
         }
         this.jenkins.stopBuild(job.name, num)
       })
