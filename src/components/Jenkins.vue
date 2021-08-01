@@ -202,6 +202,13 @@ export default {
         if (i > -1) $.xhrPool.splice(i, 1); //  removes from list by index
       }
     });
+    $( document ).ajaxError(function( event, jqxhr, settings, thrownError ) {
+       if (jqxhr.statusText === 'error') {
+
+       } else if (thrownError) {
+
+       }
+    });
     if (this.getJenkins()) {
       this.setJobList();
     }
@@ -426,7 +433,11 @@ export default {
         result = await this.jenkins.listJobs('', this.viewSelected)
       } catch (e) {
         console.error(e)
-        this.$alert(e.responseText, '', {
+        let error = '请求失败，请检查配置'
+        if (e.responseText) {
+          error = e.responseText
+        }
+        this.$alert(error, '', {
           dangerouslyUseHTMLString: true
         });
       }
