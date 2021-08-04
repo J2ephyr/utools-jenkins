@@ -77,7 +77,7 @@ const checkUrl = (rule, value, callback) => {
       + '([0-9a-z_!~*\'()-]+.)*' // 域名- www.
       + '([0-9a-z][0-9a-z-]{0,61})?[0-9a-z].' // 二级域名
       + '[a-z]{2,6})' // first level domain- .com or .museum
-      + '(:[0-9]{1,4})?' // 端口- :80
+      + '(:[0-9]{1,5})?' // 端口- :80
       + '((/?)|' // a slash isn't required if there is no file name
       + '(/[0-9a-z_!~*\'().;?:@&=+$,%#-]+)+/?)$'
     let oRegUrl = new RegExp(strRegex);
