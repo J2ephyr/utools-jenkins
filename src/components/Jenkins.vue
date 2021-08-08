@@ -553,8 +553,11 @@ export default {
 </script>
 
 <!-- Add "scoped" attribute to limit CSS to this component only -->
-<style scoped>
+<style>
 .el-row {
   margin-bottom: 20px;
+}
+.pipeline-new-node{
+  color: #9A9999;
 }
 </style>
