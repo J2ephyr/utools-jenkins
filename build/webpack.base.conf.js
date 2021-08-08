@@ -1,4 +1,4 @@
-'use strict'
+  'use strict'
 const path = require('path')
 const utils = require('./utils')
 const config = require('../config')
@@ -48,7 +48,8 @@ module.exports = {
         options: {
           limit: 10000,
           name: utils.assetsPath('img/[name].[hash:7].[ext]')
-        }
+        },
+        exclude: [resolve('src/assets/svg')]
       },
       {
         test: /\.(mp4|webm|ogg|mp3|wav|flac|aac)(\?.*)?$/,
@@ -65,6 +66,10 @@ module.exports = {
           limit: 10000,
           name: utils.assetsPath('fonts/[name].[hash:7].[ext]')
         }
+      }, {
+        test: /\.svg$/,
+        loader: 'svg-sprite-loader',
+        include: [resolve('src/assets/svg')],
       }
     ]
   },
