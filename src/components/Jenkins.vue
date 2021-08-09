@@ -337,7 +337,6 @@ export default {
       job.interval = setInterval(async () => {
         try {
           await this.getBuildProgress(job)
-          console.log(job)
           if (job.buildStatus === 'FINISH') {
             clearInterval(job.interval);
             job.interval = null;
