@@ -105,7 +105,7 @@
           <el-input v-else-if="jobParameterTypeOfTextArea.indexOf(param.type) !== -1" type="textarea" autosize
                     v-model="currentJob.form[param.name]"/>
           <el-switch v-else-if="jobParameterTypeOfCheckbox.indexOf(param.type) !== -1"
-                     v-model="currentJob.form[param.name]" active-color="#13ce66" inactive-color="#ff4949"/>
+                     v-model="currentJob.form[param.name]"/>
           <label v-else>不支持的参数类型：{{ param.type }}</label>
         </el-form-item>
       </el-form>
@@ -258,9 +258,7 @@ export default {
           this.timingGetBuildProgress(job)
         }
       }).catch(({error, hideNormalError}) => {
-        if (error.response && error.response.status === 404) {
           hideNormalError()
-        }
       })
     },
     /**
@@ -276,7 +274,6 @@ export default {
      * @returns {Promise<void>}
      */
     async onClickBuildJob(job) {
-      console.log('table', this.$refs.jobTable)
       let loading = this.$loading({
         lock: true,
         text: "Loading...",
@@ -304,6 +301,7 @@ export default {
         }
       }
       loading.close()
+      console.log('form', job.form)
       this.buildDialog = true;
       this.currentJob = job;
     },
@@ -313,13 +311,14 @@ export default {
      */
     startBuildJob(job) {
       this.jenkins.buildJob(job.name, job.form).then(res => {
-        console.log(res)
         let location = res.headers.location
-        console.log(location)
         let regExp = new RegExp('^.*/item/([a-zA-Z0-9]+)/$')
         let array = regExp.exec(location);
         if (array.length >= 2) {
           job.curBuildingQueueItemId = array[1]
+        }
+        if (job.curBuildingNumber) {
+          delete job.curBuildingNumber
         }
         this.$set(job, 'buildStatus', 'SUBMIT');
         this.timingGetBuildProgress(job)
@@ -333,48 +332,45 @@ export default {
     /**
      * 定时获取构建进度
      */
-    timingGetBuildProgress(job) {
-      job.interval = setInterval(async () => {
-        try {
-          await this.getBuildProgress(job)
-          if (job.buildStatus === 'FINISH') {
-            clearInterval(job.interval);
-            job.interval = null;
-            let notify = '构建结束！'
-            switch (job.buildResult) {
-              case 'SUCCESS':
-                notify = '构建成功！'
-                break
-              case 'UNSTABLE':
-                notify = '构建结束，结果不稳定！'
-                break
-              case 'FAILURE':
-                notify = '构建失败！'
-                break
-              case 'NOT_BUILT':
-                notify = '构建未开始！'
-                break
-              case 'ABORTED':
-                notify = '构建中止！'
-                break
-            }
-            utools.showNotification(job.name + notify)
+    async timingGetBuildProgress(job) {
+      let timing = true
+      try {
+        await this.getBuildProgress(job)
+        if (job.buildStatus === 'FINISH') {
+          let notify = '构建结束！'
+          timing = false
+          switch (job.buildResult) {
+            case 'SUCCESS':
+              notify = '构建成功！'
+              break
+            case 'UNSTABLE':
+              notify = '构建结束，结果不稳定！'
+              break
+            case 'FAILURE':
+              notify = '构建失败！'
+              break
+            case 'NOT_BUILT':
+              notify = '构建未开始！'
+              break
+            case 'ABORTED':
+              notify = '构建中止！'
+              break
           }
-        } catch (e) {
-          if (job.interval) {
-            clearInterval(job.interval);
-            job.interval = null;
-            utools.showNotification(job.name + '构建中止！')
-          }
-        } finally {
-          if (job.interval === null) {
-            let data = await this.jenkins.getJob(job.name).then(res => res.data);
-            this.$set(job, 'color', data.color)
-            this.jenkins.convertJobColor(job)
-            await this.getJobLastBuild(job)
-          }
+          utools.showNotification(job.name + notify)
+        } else {
+          setTimeout(() => this.timingGetBuildProgress(job), 5000)
         }
-      }, 5000)
+      } catch (e) {
+        timing = false
+        utools.showNotification(job.name + '构建中止！')
+      } finally {
+        if (!timing) {
+          let data = await this.jenkins.getJob(job.name).then(res => res.data);
+          this.$set(job, 'color', data.color)
+          this.jenkins.convertJobColor(job)
+          await this.getJobLastBuild(job)
+        }
+      }
     },
     /**
      * 获取构建进度
@@ -395,9 +391,7 @@ export default {
             let estimatedDuration = result.estimatedDuration
             let progress = -1
             if (estimatedDuration && estimatedDuration !== -1) {
-              console.log(startTime, nowTime, estimatedDuration)
               progress = Math.ceil(((nowTime - startTime) / estimatedDuration) * 100)
-              console.log('p', progress)
               if (progress >= 100) {
                 progress = 99
               }
@@ -455,41 +449,36 @@ export default {
       this.currentJob = job
       this.consoleDialog = true
       if (job.buildStatus && (job.buildStatus === 'SUBMIT' || job.buildStatus === 'BUILDING')) {
-        job.consoleInterval = setInterval(() => {
-          try {
-            if (job.buildStatus === 'FINISH') {
-              clearInterval(job.consoleInterval)
-              job.consoleInterval = null
-            }
-            if (job.curBuildingNumber) {
-              this.jenkins.getBuildConsole(job.name, job.curBuildingNumber, job.fetchedSize).then(res => {
-                if (res.headers['content-length'] === 0){
-                  return
-                }
-                this.console = this.console + res.data
-                let moreData = res.headers['x-more-data']
-                job.fetchedSize = res.headers['x-text-size']
-                if (!moreData || moreData === false) {
-                  clearInterval(job.consoleInterval)
-                  job.consoleInterval = null
-                }
-              })
-            }
-          } catch (e) {
-            if (job.consoleInterval !== null) {
-              clearInterval(job.consoleInterval)
-              job.consoleInterval = null
-            }
-            this.$message({
-              message: e.message,
-              type: 'error'
-            });
-          }
-        }, 1000)
+        this.timingGetBuildConsole(job)
       } else {
         this.jenkins.getBuildConsole(job.name, 'lastBuild', 0).then(res => {
           this.console = res.data
         })
+      }
+    },
+    async timingGetBuildConsole(job) {
+      if (job.buildStatus === 'FINISH') {
+        return false
+      }
+      if (!job.curBuildingNumber) {
+        setTimeout(() => this.timingGetBuildConsole(job), 5000)
+        return true
+      }
+      try {
+        return await this.jenkins.getBuildConsole(job.name, job.curBuildingNumber, job.fetchedSize).then(res => {
+          if (res.headers['content-length'] === 0) {
+            setTimeout(() => this.timingGetBuildConsole(job), 5000)
+            return true
+          }
+          this.console = this.console + res.data
+          let moreData = res.headers['x-more-data']
+          job.fetchedSize = res.headers['x-text-size']
+          if (moreData && moreData !== false) {
+            setTimeout(() => this.timingGetBuildConsole(job), 3000)
+          }
+        })
+      } catch (e) {
+        return false
       }
     },
     onConsoleDialogClose(done) {
@@ -556,7 +545,8 @@ export default {
 .el-row {
   margin-bottom: 20px;
 }
-.pipeline-new-node{
+
+.pipeline-new-node {
   color: #9A9999;
 }
 </style>

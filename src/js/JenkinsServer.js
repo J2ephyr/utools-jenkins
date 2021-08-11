@@ -25,7 +25,7 @@ export default class JenkinsServer {
       if (jenkinsServer.baseInfo && jenkinsServer.baseInfo.useCrumbs && jenkinsServer.crumb) {
         config.headers[jenkinsServer.crumb.crumbRequestField] = jenkinsServer.crumb.crumb
       }
-      config.timeout = 2500
+      config.timeout = 10000
       return config
     }, function (error) {
       console.log('request error',error)
