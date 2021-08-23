@@ -28,6 +28,9 @@ export default class JenkinsServer {
       config.timeout = 10000
       return config
     }, function (error) {
+      if (error.config.showLoading === true) {
+        jenkinsServer._hideLoading()
+      }
       console.log('request error',error)
       return Promise.reject(error);
     });

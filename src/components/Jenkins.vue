@@ -206,7 +206,19 @@ export default {
      * 切换配置
      */
     async switchConfig() {
-      this.jobList = []
+      if (this.jobList && this.jobList.length !== 0) {
+        for(let job of this.jobList) {
+          if (job.buildConsoleTask) {
+            clearTimeout(job.buildConsoleTask)
+            job.buildConsoleTask = null
+          }
+          if (job.progressTask) {
+            clearTimeout(job.progressTask)
+            job.progressTask = null
+          }
+        }
+        this.jobList = []
+      }
       if (!this.configList || this.configList.length === 0) {
         return null;
       }
@@ -283,24 +295,27 @@ export default {
       if (!job.form) {
         job.form = {}
       }
-      let data = await this.jenkins.getJob(job.name).then(res => res.data);
-      job.property = data.property
-      job.description = data.description
-      job.displayName = data.displayName
-      job.parameterProcessed = []
-      if (job.property && job.property.length > 0) {
-        for (let property of job.property) {
-          if (!property || !property.parameterDefinitions || property.parameterDefinitions.length === 0) {
-            continue
-          }
-          for (let param of property.parameterDefinitions) {
-            job.form[param.name] = param.defaultParameterValue ? param.defaultParameterValue.value : '';
-            await this.jenkins.handleGitParameter(job, param)
-            job.parameterProcessed.push(param)
+      try {
+        let data = await this.jenkins.getJob(job.name).then(res => res.data);
+        job.property = data.property
+        job.description = data.description
+        job.displayName = data.displayName
+        job.parameterProcessed = []
+        if (job.property && job.property.length > 0) {
+          for (let property of job.property) {
+            if (!property || !property.parameterDefinitions || property.parameterDefinitions.length === 0) {
+              continue
+            }
+            for (let param of property.parameterDefinitions) {
+              job.form[param.name] = param.defaultParameterValue ? param.defaultParameterValue.value : '';
+              await this.jenkins.handleGitParameter(job, param)
+              job.parameterProcessed.push(param)
+            }
           }
         }
+      } finally {
+        loading.close()
       }
-      loading.close()
       console.log('form', job.form)
       this.buildDialog = true;
       this.currentJob = job;
@@ -358,7 +373,7 @@ export default {
           }
           utools.showNotification(job.name + notify)
         } else {
-          setTimeout(() => this.timingGetBuildProgress(job), 5000)
+          job.progressTask = setTimeout(() => this.timingGetBuildProgress(job), 5000)
         }
       } catch (e) {
         timing = false
@@ -447,6 +462,7 @@ export default {
     onClickJobConsole(job) {
       this.console = ''
       this.currentJob = job
+      job.fetchedSize = 0
       this.consoleDialog = true
       if (job.buildStatus && (job.buildStatus === 'SUBMIT' || job.buildStatus === 'BUILDING')) {
         this.timingGetBuildConsole(job)
@@ -461,20 +477,20 @@ export default {
         return false
       }
       if (!job.curBuildingNumber) {
-        setTimeout(() => this.timingGetBuildConsole(job), 5000)
+        job.buildConsoleTask = setTimeout(() => this.timingGetBuildConsole(job), 5000)
         return true
       }
       try {
         return await this.jenkins.getBuildConsole(job.name, job.curBuildingNumber, job.fetchedSize).then(res => {
           if (res.headers['content-length'] === 0) {
-            setTimeout(() => this.timingGetBuildConsole(job), 5000)
+            job.buildConsoleTask = setTimeout(() => this.timingGetBuildConsole(job), 5000)
             return true
           }
           this.console = this.console + res.data
           let moreData = res.headers['x-more-data']
           job.fetchedSize = res.headers['x-text-size']
           if (moreData && moreData !== false) {
-            setTimeout(() => this.timingGetBuildConsole(job), 3000)
+            job.buildConsoleTask = setTimeout(() => this.timingGetBuildConsole(job), 3000)
           }
         })
       } catch (e) {
@@ -482,9 +498,9 @@ export default {
       }
     },
     onConsoleDialogClose(done) {
-      if (this.currentJob && this.currentJob.consoleInterval) {
-        clearInterval(this.currentJob.consoleInterval)
-        this.currentJob.consoleInterval = null
+      if (this.currentJob && this.currentJob.buildConsoleTask) {
+        clearTimeout(this.currentJob.buildConsoleTask)
+        this.currentJob.buildConsoleTask = null
       }
       done()
     },
